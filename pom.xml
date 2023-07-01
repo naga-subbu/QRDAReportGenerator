@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.1.1</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.digitalhie</groupId>
+	<artifactId>QRDAReportGenerator</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>QRDAReportGenerator</name>
+	<description>Digital HIE Inc is offering a cloud based solution to the Healthcare Organizations to get the QRDA 1 and QRDA III measures in the CMS acceptable format to submit to CMS</description>
+	<properties>
+		<java.version>17</java.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-uml-hl7-vocab</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-emf-runtime</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-uml-hl7-datatypes</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-uml-hl7-rim</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-uml-cda</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openehealth.ipf.oht.mdht</groupId>
+			<artifactId>ipf-oht-mdht-uml-cda-consol</artifactId>
+			<version>1.2.0.201212201425</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
