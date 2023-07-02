@@ -16,31 +16,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class QrdcReportService {
+public class QrdaReportService {
 
-    Logger logger = LoggerFactory.getLogger(QrdcReportService.class);
+    Logger logger = LoggerFactory.getLogger(QrdaReportService.class);
 
     @Autowired
     private CCDGenerator ccdGenerator;
+
     @GetMapping("/health-check")
     public String checkHealth() {
         return "OK";
     }
 
-    @PostMapping("/{qrdcType}")
-    public void generateQrdcFile(
-            @PathVariable("qrdcType") String qrdcType,
+    @PostMapping(value = "/{qrdaType}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_XML_VALUE)
+    public void generateQrdaFile(
+            @PathVariable("qrdaType") String qrdaType,
             @RequestBody JsonNode input,
             HttpServletResponse response) throws Exception {
 
         String templateFilePath = null;
-        if(qrdcType.equalsIgnoreCase("qrdc1")) {
+        if(qrdaType.equalsIgnoreCase("qrda1")) {
             templateFilePath = "templates/2023-CMS-QRDA-I-v1.2-Sample-File.xml";
         }
-        else if(qrdcType.equalsIgnoreCase("qrdc3")) {
+        else if(qrdaType.equalsIgnoreCase("qrda3")) {
             templateFilePath = "templates/2023MIPSGroupSampleQRDA-III-v1.1.xml";
         }
         else {
@@ -48,7 +52,7 @@ public class QrdcReportService {
             response.setStatus(400);
             response.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             response.getOutputStream().print(new ObjectMapper()
-                    .writeValueAsString("Invalid QRDC type. Only qrdc1 or qrdc3 are supported."));
+                    .writeValueAsString("Invalid QRDA type. Only qrda1 or qrda3 are supported."));
             response.flushBuffer();
             return;
         }

@@ -1,28 +1,33 @@
-package com.digitalhie.QRDAReportGenerator.util;
+package com.digitalhie.QRDAReportGenerator;
 
 import com.digitalhie.QRDAReportGenerator.model.DiagnosticStudy;
 import com.digitalhie.QRDAReportGenerator.model.ObservationDetail;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openhealthtools.mdht.uml.cda.*;
 import org.openhealthtools.mdht.uml.cda.consol.ConsolPackage;
 import org.openhealthtools.mdht.uml.cda.util.CDAUtil;
 import org.openhealthtools.mdht.uml.hl7.datatypes.*;
 import org.openhealthtools.mdht.uml.hl7.vocab.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-@Service
-public class CCDGenerator {
+/*
+    This file used for local testing. Do not delete this file till we finish the project
+ */
+public class UnitTest {
 
-    Logger logger = LoggerFactory.getLogger(CCDGenerator.class);
-    public String createCCD(String templateFilePath, JsonNode input) throws Exception {
+    public static void main(String[] args) throws Exception {
+
+        String templateFilePath = "templates/2023-CMS-QRDA-I-v1.2-Sample-File.xml";
+        ObjectMapper mapper = new ObjectMapper();
+        File from = new File("src/test/resources/templates/sample-input.json");
+        JsonNode input = mapper.readTree(from);
 
         ConsolPackage.eINSTANCE.eClass();
         InputStream cpResource = Thread.currentThread().getContextClassLoader()
@@ -43,23 +48,13 @@ public class CCDGenerator {
                                 .orElseThrow(() -> new Exception("Patient Data or Measure Section not found at the template"))
                 );
 
-        // This map is used to find the codeSystemID for their names
-        Map<String, String> codeSystemNames = getCodeSystemNames(input);
+        Map<String, String> codeSystemNames = new HashMap<>();
+        codeSystemNames.put("LOINC","2.16.840.1.113883.6.1");
 
-        List<ObservationDetail> observations = getAllObservations(input);
-
-        observations.forEach(observation -> {
-            if(observation.getName().startsWith("Encounter")) {
-                patientSection.getEntries().add(
-                        createEntryWithEncounter(observation, codeSystemNames));
-            } else {
-                patientSection.getEntries().add(createEntryWithObservation(observation, codeSystemNames));
-            }
-        });
-
-        getDiagnosticStudyPerformedFields(input).forEach(diagnosticStudy -> {
-            patientSection.getEntries().add(createEntryWithDiagnosticStudyObservation(diagnosticStudy, codeSystemNames));
-        });
+        ObservationDetail o = new ObservationDetail();
+        o.setId("dummyId");
+        o.setName("dummyName");
+        patientSection.getEntries().add(createEntryWithObservation(o, codeSystemNames));
 
         // write to file
         String fileName = UUID.randomUUID()+"_ccd_file.xml";
@@ -68,57 +63,9 @@ public class CCDGenerator {
         fos.close();
         if(cpResource!=null)
             cpResource.close();
-
-        return fileName;
     }
 
-    private List<ObservationDetail> getAllObservations(JsonNode input) {
-
-        List<ObservationDetail> observationDetails = new ArrayList<>();
-        ArrayNode arrayNode = (ArrayNode) input.get("library").get("valueSets").get("def");
-        arrayNode.forEach(e -> {
-            String value = e.get("id").textValue();
-            if(value.contains(":")) {
-                String[] subSet = value.split(":");
-                value = subSet[subSet.length-1];
-            }
-            ObservationDetail observationDetail = new ObservationDetail();
-            observationDetail.setId(value);
-            observationDetail.setName(e.get("name").asText());
-            observationDetails.add(observationDetail);
-        });
-        return observationDetails;
-    }
-
-    private List<DiagnosticStudy> getDiagnosticStudyPerformedFields(JsonNode input) {
-        List<DiagnosticStudy> diagnosticStudyRecords = new ArrayList<>();
-        ArrayNode arrayNode = (ArrayNode) input.get("library").get("codes").get("def");
-        arrayNode.forEach(e -> {
-            DiagnosticStudy diagnosticStudy = new DiagnosticStudy();
-            diagnosticStudy.setId(e.get("id").asText());
-            diagnosticStudy.setName(e.get("name").textValue());
-            diagnosticStudy.setCodeSystemName(e.get("codeSystem").get("name").asText());
-            diagnosticStudyRecords.add(diagnosticStudy);
-        });
-        return diagnosticStudyRecords;
-    }
-
-    private Map<String, String> getCodeSystemNames(JsonNode input) {
-        Map<String, String> fields = new HashMap<>();
-        ArrayNode arrayNode = (ArrayNode) input.get("library").get("codeSystems").get("def");
-        arrayNode.forEach(e -> {
-            String value = e.get("id").textValue();
-            if(value.contains(":")) {
-                String[] subSet = value.split(":");
-                value = subSet[subSet.length-1];
-            }
-            fields.put(e.get("name").asText(),value);
-        });
-
-        return fields;
-    }
-
-    private Entry createEntryWithEncounter(ObservationDetail observationDetail, Map<String, String> codeSystemNames) {
+    private static Entry createEntryWithEncounter(ObservationDetail observationDetail, Map<String, String> codeSystemNames) {
         Entry entry = CDAFactory.eINSTANCE.createEntry();
         entry.setTypeCode(x_ActRelationshipEntry.DRIV);
         CD code = DatatypesFactory.eINSTANCE.createCD();
@@ -144,7 +91,7 @@ public class CCDGenerator {
         return entry;
     }
 
-    private Entry createEntryWithObservation(ObservationDetail observationDetail, Map<String, String> codeSystemNames) {
+    private static Entry createEntryWithObservation(ObservationDetail observationDetail, Map<String, String> codeSystemNames) {
         Entry entry = CDAFactory.eINSTANCE.createEntry();
         entry.setTypeCode(x_ActRelationshipEntry.DRIV);
         CD code = DatatypesFactory.eINSTANCE.createCD();
@@ -165,13 +112,16 @@ public class CCDGenerator {
         CD value =  DatatypesFactory.eINSTANCE.createCD();
         value.setCodeSystem(observationDetail.getId());
         o.getValues().add(value);
-
+        II templateId = DatatypesFactory.eINSTANCE.createII("rootId","extensionId");
+        II id = DatatypesFactory.eINSTANCE.createII("sampleId","sampleExtensionId");
+        o.getTemplateIds().add(templateId);
+        o.getIds().add(id);
         entry.setObservation(o);
 
         return entry;
     }
 
-    private Entry createEntryWithDiagnosticStudyObservation(
+    private static Entry createEntryWithDiagnosticStudyObservation(
             DiagnosticStudy diagnosticStudy,
             Map<String, String> codeSystemNames) {
         Entry entry = CDAFactory.eINSTANCE.createEntry();
