@@ -24,7 +24,7 @@ public class UnitTest {
 
     public static void main(String[] args) throws Exception {
 
-        String templateFilePath = "templates/2023-CMS-QRDA-I-v1.2-Sample-File.xml";
+        String templateFilePath =  "templates/2023MIPSGroupSampleQRDA-III-v1.1.xml"; // "templates/2023-CMS-QRDA-I-v1.2-Sample-File.xml";
         ObjectMapper mapper = new ObjectMapper();
         File from = new File("src/test/resources/templates/sample-input.json");
         JsonNode input = mapper.readTree(from);
@@ -34,19 +34,15 @@ public class UnitTest {
                 .getResourceAsStream(templateFilePath);
         ClinicalDocument oClinicalDocument = CDAUtil.load(cpResource); //Loads CDADocument.
 
-        // First tries to find patient data section else will look for Measure Section else throws error
-        Section patientSection = oClinicalDocument.getSections().stream()
-                .filter(section -> section.getTitle()!=null
-                        && section.getTitle().getText()!=null
-                        && section.getTitle().getText().equalsIgnoreCase("Patient Data")
-                ).findFirst().orElse(
-                        oClinicalDocument.getSections().stream()
-                                .filter(section -> section.getTitle()!=null
-                                        && section.getTitle().getText()!=null
-                                        && section.getTitle().getText().equalsIgnoreCase("Measure Section")
-                                ).findFirst()
-                                .orElseThrow(() -> new Exception("Patient Data or Measure Section not found at the template"))
-                );
+        Section measureSection = oClinicalDocument.getSections().stream()
+                .filter(section -> {
+                    for(II templateId: section.getTemplateIds()) {
+                        if(templateId.getRoot() !=null && templateId.getRoot().equals("2.16.840.1.113883.10.20.24.2.2")) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }).findFirst().orElseThrow(() -> new Exception("Measure section not found at the template"));
 
         Map<String, String> codeSystemNames = new HashMap<>();
         codeSystemNames.put("LOINC","2.16.840.1.113883.6.1");
@@ -54,7 +50,7 @@ public class UnitTest {
         ObservationDetail o = new ObservationDetail();
         o.setId("dummyId");
         o.setName("dummyName");
-        patientSection.getEntries().add(createEntryWithObservation(o, codeSystemNames));
+        measureSection.getEntries().add(createEntryWithObservation(o, codeSystemNames));
 
         // write to file
         String fileName = UUID.randomUUID()+"_ccd_file.xml";

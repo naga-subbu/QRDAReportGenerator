@@ -59,7 +59,7 @@ public class QrdaReportService {
 
         String fileName = null;
         try {
-            fileName = ccdGenerator.createCCD(templateFilePath, input);
+            fileName = ccdGenerator.createCCD(templateFilePath, input, qrdaType);
         } catch (Exception ex) {
             logger.error("Error occurred while creating CCD file: "+ex.getMessage(), ex);
             response.resetBuffer();

@@ -22,47 +22,49 @@ import java.util.*;
 public class CCDGenerator {
 
     Logger logger = LoggerFactory.getLogger(CCDGenerator.class);
-    public String createCCD(String templateFilePath, JsonNode input) throws Exception {
+    public String createCCD(String templateFilePath, JsonNode input, String qrdaType) throws Exception {
 
         ConsolPackage.eINSTANCE.eClass();
         InputStream cpResource = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(templateFilePath);
         ClinicalDocument oClinicalDocument = CDAUtil.load(cpResource); //Loads CDADocument.
 
-        // First tries to find patient data section else will look for Measure Section else throws error
-        Section patientSection = oClinicalDocument.getSections().stream()
-                .filter(section -> section.getTitle()!=null
-                        && section.getTitle().getText()!=null
-                        && section.getTitle().getText().equalsIgnoreCase("Patient Data")
-                ).findFirst().orElse(
-                        oClinicalDocument.getSections().stream()
-                                .filter(section -> section.getTitle()!=null
-                                        && section.getTitle().getText()!=null
-                                        && section.getTitle().getText().equalsIgnoreCase("Measure Section")
-                                ).findFirst()
-                                .orElseThrow(() -> new Exception("Patient Data or Measure Section not found at the template"))
-                );
+        // Find measure section with templateId
+        Section measureSection = oClinicalDocument.getSections().stream()
+                .filter(section -> {
+                    for(II templateId: section.getTemplateIds()) {
+                        if(templateId.getRoot() !=null && templateId.getRoot().equals("2.16.840.1.113883.10.20.24.2.2")) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }).findFirst().orElseThrow(() -> new Exception("Measure section not found at the template"));
 
         // This map is used to find the codeSystemID for their names
         Map<String, String> codeSystemNames = getCodeSystemNames(input);
 
+
         List<ObservationDetail> observations = getAllObservations(input);
+        logger.info("Retrieved Encounters and Observations. Count: "+observations.size());
 
         observations.forEach(observation -> {
             if(observation.getName().startsWith("Encounter")) {
-                patientSection.getEntries().add(
+                measureSection.getEntries().add(
                         createEntryWithEncounter(observation, codeSystemNames));
             } else {
-                patientSection.getEntries().add(createEntryWithObservation(observation, codeSystemNames));
+                measureSection.getEntries().add(createEntryWithObservation(observation, codeSystemNames));
             }
         });
 
-        getDiagnosticStudyPerformedFields(input).forEach(diagnosticStudy -> {
-            patientSection.getEntries().add(createEntryWithDiagnosticStudyObservation(diagnosticStudy, codeSystemNames));
+        List<DiagnosticStudy> diagnosticStudies = getDiagnosticStudyPerformedFields(input);
+        logger.info("Retrieved Diagnostic Studies. Count: "+diagnosticStudies.size());
+
+        diagnosticStudies.forEach(diagnosticStudy -> {
+            measureSection.getEntries().add(createEntryWithDiagnosticStudyObservation(diagnosticStudy, codeSystemNames));
         });
 
         // write to file
-        String fileName = UUID.randomUUID()+"_ccd_file.xml";
+        String fileName = UUID.randomUUID()+"_"+qrdaType+"_ccd_file.xml";
         FileOutputStream fos = new FileOutputStream(fileName);
         CDAUtil.save(oClinicalDocument, fos);
         fos.close();
